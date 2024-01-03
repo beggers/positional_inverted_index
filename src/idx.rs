@@ -56,8 +56,8 @@ impl PositionalInvertedIndex {
                         let mut new_starts = vec![];
                         for &candidate_phrase_start in candidate_phrase_starts {
                             match current_token_positions.binary_search(&(candidate_phrase_start + i)) {
-                                Ok(pos) => new_starts.push(candidate_phrase_start),
-                                Err(pos) => {},
+                                Ok(_pos) => new_starts.push(candidate_phrase_start),
+                                Err(_pos) => {},
                             }
                         }
                         if !new_starts.is_empty() {
@@ -72,7 +72,7 @@ impl PositionalInvertedIndex {
         }
 
         let mut results = vec![];
-        for (doc_id, positions) in possibles {
+        for (doc_id, _positions) in possibles {
             results.push(doc_id);
         }
         results.sort();
@@ -147,6 +147,7 @@ mod tests {
         assert_eq!(results2, vec![2]);
     }
 
+    #[test]
     fn test_search_multi_token_multi_result_complex() {
         let mut index = PositionalInvertedIndex::new();
         index.index_document(1, "This is a longer string with more tokens than any other test case");
