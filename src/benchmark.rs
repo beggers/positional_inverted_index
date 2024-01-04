@@ -34,8 +34,8 @@ pub fn benchmark_index(
     querying_writer.write_record(&["Document Count", "Toknes in Query", "Query Duration"])?;
     size_writer.write_record(&["Paragraph", "Mean Posting List Size", "Std Dev Posting List Size"])?;
 
+    let mut paragraph_counter = 0;
     for filename in filenames {
-        let mut paragraph_counter = 0;
         let paragraphs = read_file_into_paragraphs(&filename)?;
 
         for paragraph in paragraphs {
