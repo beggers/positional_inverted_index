@@ -196,9 +196,19 @@ mod tests {
     }
 
     #[test]
-    fn test_index_file() {
+    fn test_index_file_single_paragraph() {
         let mut index = PositionalInvertedIndex::new();
-        let test_file_path = "test_data/3_paragraphs.txt"; // Replace with the actual path to your test file
+        let test_file_path = "test_data/1_paragraph.txt";
+        assert!(index.index_file(test_file_path).is_ok());
+        for (_term, posting_list) in &index.index {
+            assert!(posting_list.len() == 1);
+        }
+    }
+
+    #[test]
+    fn test_index_file_multiple_paragraphs() {
+        let mut index = PositionalInvertedIndex::new();
+        let test_file_path = "test_data/3_paragraphs.txt";
         assert!(index.index_file(test_file_path).is_ok());
         for (_term, posting_list) in &index.index {
             assert!(posting_list.len() <= 3);
