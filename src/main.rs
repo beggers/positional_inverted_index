@@ -29,6 +29,8 @@ fn main() {
                 .required(true)))
         .subcommand(SubCommand::with_name("term_list_size")
             .about("Prints the approximate size of the term list in bytes"))
+        .subcommand(SubCommand::with_name("posting_list_sizes")
+            .about("Prints the approximate size of each posting list in bytes"))
         .get_matches();
 
     let index_path = matches.value_of("INDEX").unwrap();
@@ -56,6 +58,9 @@ fn main() {
         },
         ("term_list_size", Some(_)) => {
             println!("Approximate term list size in bytes: {}", index.approximate_term_list_size_in_bytes());
+        },
+        ("posting_list_sizes", Some(_)) => {
+            println!("Approximate posting list sizes in bytes: {:?}", index.approximate_posting_list_sizes_in_bytes());
         },
         _ => panic!("You must specify a subcommand: either 'index' or 'search'"),
     }

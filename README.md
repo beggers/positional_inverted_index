@@ -21,4 +21,6 @@ $ cargo run $INDEX_NAME search "more content"
 Search results: [2, 3]
 $ cargo run $INDEX_NAME term_list_size
 Approximate term list size in bytes: 216
+$ cargo run $INDEX_NAME posting_list_sizes
+Approximate posting list sizes in bytes: [16, 32, 32, 48, 48, 48]
 ```

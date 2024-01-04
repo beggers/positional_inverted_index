@@ -84,6 +84,20 @@ impl PositionalInvertedIndex {
         // Average English word is length 4.
         return std::mem::size_of_val(&self.index) + &self.index.len() * (mem::size_of::<String>()+4);
     }
+
+    pub fn approximate_posting_list_sizes_in_bytes(&self) -> Vec<usize> {
+        let mut sizes = vec![];
+        for (_term, posting_list) in &self.index {
+            let mut size = 0;
+            for (_doc_id, positions) in posting_list {
+                // Add 1 to account for the doc ID.
+                size += (positions.len() + 1) * mem::size_of::<usize>();
+            }
+            sizes.push(size);
+        }
+        sizes.sort();
+        sizes
+    }
 }
 
 #[cfg(test)]
@@ -164,14 +178,14 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_index_size() {
+    fn test_empty_index_term_list_size() {
         let index = PositionalInvertedIndex::new();
         assert!(index.approximate_term_list_size_in_bytes() > 0);
         assert!(index.approximate_term_list_size_in_bytes() < 100);
     }
 
     #[test]
-    fn test_increasing_size() {
+    fn test_increasing_size_increases_term_list_size() {
         let mut index = PositionalInvertedIndex::new();
         let initial_size = index.approximate_term_list_size_in_bytes();
 
@@ -185,7 +199,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reasonable_size_for_large_index() {
+    fn test_term_list_size_is_reasonable_for_large_index() {
         let mut index = PositionalInvertedIndex::new();
         for i in 1..=1000 {
             index.index_document(i, "some repetitive test document content");
@@ -193,5 +207,69 @@ mod tests {
 
         let size = index.approximate_term_list_size_in_bytes();
         assert!(size < 1000000);
+    }
+
+    #[test]
+    fn test_empty_index_posting_list_sizes() {
+        let index = PositionalInvertedIndex::new();
+        assert!(index.approximate_posting_list_sizes_in_bytes().is_empty());
+    }
+
+    #[test]
+    fn test_single_term_posting_list_size() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "test");
+        let sizes = index.approximate_posting_list_sizes_in_bytes();
+        assert_eq!(sizes.len(), 1);
+        assert!(sizes[0] > 0);
+    }
+
+    #[test]
+    fn test_multiple_terms_correct_number_of_posting_list_sizes() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "test document");
+        index.index_document(2, "another test document");
+        let sizes = index.approximate_posting_list_sizes_in_bytes();
+        assert_eq!(sizes.len(), 3);
+    }
+
+    #[test]
+    fn test_multiple_documents_multiple_terms_correct_number_of_posting_list_sizes() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "test document");
+        index.index_document(2, "another test document");
+
+        let sizes = index.approximate_posting_list_sizes_in_bytes();
+        assert_eq!(sizes.len(), 3);
+    }
+
+    #[test]
+    fn test_posting_list_sizes_sorted() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "test document");
+        index.index_document(2, "another test document");
+
+        let sizes = index.approximate_posting_list_sizes_in_bytes();
+        assert!(sizes[0] <= sizes[1]);
+        assert!(sizes[1] <= sizes[2]);
+    }
+
+    #[test]
+    fn test_increasing_size_increases_posting_list_sizes() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "a document");
+        index.index_document(2, "a bit longer document");
+
+        let initial_sizes = index.approximate_posting_list_sizes_in_bytes();
+        assert!(initial_sizes[0] <= initial_sizes[1]);
+
+        index.index_document(3, "a bit longer document");
+        index.index_document(4, "a bit longer document");
+
+        let final_sizes = index.approximate_posting_list_sizes_in_bytes();
+
+        for i in 0..3 {
+            assert!(initial_sizes[i] < final_sizes[i]);
+        }
     }
 }
