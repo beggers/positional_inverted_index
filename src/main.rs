@@ -2,9 +2,15 @@ mod benchmark;
 mod idx;
 
 use idx::PositionalInvertedIndex;
-use clap::{App, Arg, SubCommand};
-use std::fs;
-use std::path::Path;
+use clap::{
+    App,
+    Arg,
+    SubCommand
+};
+use std::{
+    fs,
+    path::Path
+};
 
 fn main() {
     let matches = App::new("Positional Inverted Index CLI")

@@ -1,6 +1,11 @@
-use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
-use std::mem;
+use serde::{
+    Serialize,
+    Deserialize
+};
+use std::{
+    collections::HashMap,
+    mem
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct PositionalInvertedIndex {
