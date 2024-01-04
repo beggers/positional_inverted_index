@@ -1,3 +1,4 @@
+mod benchmark;
 mod idx;
 
 use idx::PositionalInvertedIndex;

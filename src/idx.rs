@@ -1,11 +1,6 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
-use std::collections::hash_map::DefaultHasher;
-use std::error::Error;
-use std::hash::{Hash, Hasher};
-use std::fs;
 use std::mem;
-use regex::Regex;
 
 #[derive(Serialize, Deserialize)]
 pub struct PositionalInvertedIndex {
@@ -83,19 +78,6 @@ impl PositionalInvertedIndex {
         }
         results.sort();
         results
-    }
-
-    pub fn index_file(&mut self, file_path: &str) -> Result<(), Box<dyn Error>> {
-        let contents = fs::read_to_string(file_path)?;
-        let re = Regex::new(r"\n\s*\n")?;
-        let paragraphs = re.split(&contents);
-        let mut hasher = DefaultHasher::new();
-        for paragraph in paragraphs {
-            paragraph.hash(&mut hasher);
-            let hash = hasher.finish();
-            self.index_document(hash as usize, paragraph);
-        }
-        Ok(())
     }
 
     pub fn approximate_term_list_size_in_bytes(&self) -> usize {
@@ -193,26 +175,6 @@ mod tests {
         index.index_document(3, "And finally we have a third document with a few tokens but still many tokens relatively");
         let results1 = index.search("many tokens");
         assert_eq!(results1, vec![2, 3]);
-    }
-
-    #[test]
-    fn test_index_file_single_paragraph() {
-        let mut index = PositionalInvertedIndex::new();
-        let test_file_path = "test_data/1_paragraph.txt";
-        assert!(index.index_file(test_file_path).is_ok());
-        for (_term, posting_list) in &index.index {
-            assert!(posting_list.len() == 1);
-        }
-    }
-
-    #[test]
-    fn test_index_file_multiple_paragraphs() {
-        let mut index = PositionalInvertedIndex::new();
-        let test_file_path = "test_data/3_paragraphs.txt";
-        assert!(index.index_file(test_file_path).is_ok());
-        for (_term, posting_list) in &index.index {
-            assert!(posting_list.len() <= 3);
-        }
     }
 
     #[test]
