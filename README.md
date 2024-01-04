@@ -19,4 +19,6 @@ $ cargo run $INDEX_NAME search "here"
 Search results: [1, 2, 3]
 $ cargo run $INDEX_NAME search "more content"
 Search results: [2, 3]
+$ cargo run $INDEX_NAME term_list_size
+Approximate term list size in bytes: 216
 ```
