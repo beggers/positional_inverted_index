@@ -27,6 +27,8 @@ fn main() {
             .arg(Arg::with_name("QUERY")
                 .help("The query string to search for")
                 .required(true)))
+        .subcommand(SubCommand::with_name("term_list_size")
+            .about("Prints the approximate size of the term list in bytes"))
         .get_matches();
 
     let index_path = matches.value_of("INDEX").unwrap();
@@ -51,6 +53,9 @@ fn main() {
             let query = sub_m.value_of("QUERY").unwrap();
             let results = index.search(query);
             println!("Search results: {:?}", results);
+        },
+        ("term_list_size", Some(_)) => {
+            println!("Approximate term list size in bytes: {}", index.approximate_term_list_size_in_bytes());
         },
         _ => panic!("You must specify a subcommand: either 'index' or 'search'"),
     }

@@ -9,7 +9,7 @@ A positional inverted index is the core data structure underyling many (most? al
 `src/main.rs` contains a small CLI wrapper to interact with it. You can use it as follows:
 
 ```sh
-$ INDEX_NAME=testindex  # the file you want to save the index in. Indices and files are 1-1
+$ INDEX_NAME=indices/testindex  # the file you want to save the index in. Indices and files are 1-1
 $ cargo run $INDEX_NAME index 1 "here is some content"
 $ cargo run $INDEX_NAME index 2 "here is some more content"
 $ cargo run $INDEX_NAME index 3 "here is even more content"

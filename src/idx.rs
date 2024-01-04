@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
+use std::mem;
 
 #[derive(Serialize, Deserialize)]
 pub struct PositionalInvertedIndex {
@@ -78,6 +79,11 @@ impl PositionalInvertedIndex {
         results.sort();
         results
     }
+
+    pub fn approximate_term_list_size_in_bytes(&self) -> usize {
+        // Average English word is length 4.
+        return std::mem::size_of_val(&self.index) + &self.index.len() * (mem::size_of::<String>()+4);
+    }
 }
 
 #[cfg(test)]
@@ -155,5 +161,37 @@ mod tests {
         index.index_document(3, "And finally we have a third document with a few tokens but still many tokens relatively");
         let results1 = index.search("many tokens");
         assert_eq!(results1, vec![2, 3]);
+    }
+
+    #[test]
+    fn test_empty_index_size() {
+        let index = PositionalInvertedIndex::new();
+        assert!(index.approximate_term_list_size_in_bytes() > 0);
+        assert!(index.approximate_term_list_size_in_bytes() < 100);
+    }
+
+    #[test]
+    fn test_increasing_size() {
+        let mut index = PositionalInvertedIndex::new();
+        let initial_size = index.approximate_term_list_size_in_bytes();
+
+        index.index_document(1, "test document one");
+        let first_size = index.approximate_term_list_size_in_bytes();
+        assert!(first_size > initial_size);
+
+        index.index_document(2, "another test document");
+        let second_size = index.approximate_term_list_size_in_bytes();
+        assert!(second_size > first_size);
+    }
+
+    #[test]
+    fn test_reasonable_size_for_large_index() {
+        let mut index = PositionalInvertedIndex::new();
+        for i in 1..=1000 {
+            index.index_document(i, "some repetitive test document content");
+        }
+
+        let size = index.approximate_term_list_size_in_bytes();
+        assert!(size < 1000000);
     }
 }
