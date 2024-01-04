@@ -29,7 +29,9 @@ Approximate posting list sizes in bytes: [16, 32, 32, 48, 48, 48]
 # Benchmarking
 
 ```sh
-$ INDEX_NAME=indices/frankenstein
+$ INDEX_NAME=indices/frankenstein  # Index name doesn't actually matter for benchmarking but is still required
 $ cargo run -- $INDEX_NAME benchmark 50 3 3 results/frankenstein "benchmarking_data/frankenstein.txt"
+Benchmark completed successfully
+$ cargo run -- $INDEX_NAME benchmark 50 3 3 results/many_books_small_queries $(find benchmarking_data | grep "/")
 Benchmark completed successfully
 ```

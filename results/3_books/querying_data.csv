@@ -1,4 +1,4 @@
-Document Count,Toknes in Query,Query Duration
+Document Count,Tokens in Query,Query Duration
 0,1,3.167µs
 0,2,2.625µs
 0,3,3.375µs

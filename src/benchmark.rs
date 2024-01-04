@@ -31,7 +31,7 @@ pub fn benchmark_index(
     let mut size_writer = Writer::from_path(size_csv_path)?;
 
     indexing_writer.write_record(&["Document Count", "Indexing Duration"])?;
-    querying_writer.write_record(&["Document Count", "Toknes in Query", "Query Duration"])?;
+    querying_writer.write_record(&["Document Count", "Tokens in Query", "Query Duration"])?;
     size_writer.write_record(&["Paragraph", "Mean Posting List Size", "Std Dev Posting List Size"])?;
 
     let mut paragraph_counter = 0;
