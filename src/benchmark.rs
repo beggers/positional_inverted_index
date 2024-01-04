@@ -1,11 +1,12 @@
 use crate::PositionalInvertedIndex;
 
+use csv::Writer;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use regex::Regex;
 use std::{
     error::Error,
-    fs::{self, File},
-    io::Write,
+    f64,
+    fs::self,
     path::Path,
     time::Instant,
 };
@@ -21,18 +22,20 @@ pub fn benchmark_index(
 
     fs::create_dir_all(target_directory)?;
 
-    let indexing_time_file_path = Path::new(target_directory).join("indexing_time.txt");
-    let search_time_file_path = Path::new(target_directory).join("search_time.txt");
-    let term_list_size_file_path = Path::new(target_directory).join("term_list_size.txt");
-    let posting_list_size_file_path = Path::new(target_directory).join("posting_list_size.txt");
+    let indexing_csv_path = Path::new(target_directory).join("indexing_data.csv");
+    let querying_csv_path = Path::new(target_directory).join("querying_data.csv");
+    let size_csv_path = Path::new(target_directory).join("size_data.csv");
 
-    let mut indexing_time_file = File::create(indexing_time_file_path)?;
-    let mut search_time_file = File::create(search_time_file_path)?;
-    let mut term_list_size_file = File::create(term_list_size_file_path)?;
-    let mut posting_list_size_file = File::create(posting_list_size_file_path)?;
+    let mut indexing_writer = Writer::from_path(indexing_csv_path)?;
+    let mut querying_writer = Writer::from_path(querying_csv_path)?;
+    let mut size_writer = Writer::from_path(size_csv_path)?;
 
-    let mut paragraph_counter = 0;
+    indexing_writer.write_record(&["Document Count", "Indexing Duration"])?;
+    querying_writer.write_record(&["Document Count", "Query Duration"])?;
+    size_writer.write_record(&["Paragraph", "Mean Posting List Size", "Std Dev Posting List Size"])?;
+
     for filename in filenames {
+        let mut paragraph_counter = 0;
         let paragraphs = read_file_into_paragraphs(&filename)?;
 
         for paragraph in paragraphs {
@@ -42,8 +45,8 @@ pub fn benchmark_index(
 
             let start = Instant::now();
             index.index_document(paragraph_counter, &paragraph);
-            let duration = start.elapsed();
-            writeln!(indexing_time_file, "{} {:?}", paragraph_counter, duration)?;
+            let indexing_duration = start.elapsed();
+            indexing_writer.write_record(&[&paragraph_counter.to_string(), &format!("{:?}", indexing_duration)])?;
 
             if paragraph_counter % query_frequency == 0 {
 
@@ -54,20 +57,43 @@ pub fn benchmark_index(
                     let query_duration = query_start.elapsed();
 
                     let tokens_in_query = query.split_whitespace().count();
-                    writeln!(search_time_file, "{} {} {:?}", paragraph_counter, tokens_in_query, query_duration)?;
+                    querying_writer.write_record(&[&paragraph_counter.to_string(), &format!("{:?}", query_duration)])?;
                 }
 
-                let term_list_size = index.approximate_term_list_size_in_bytes();
                 let posting_list_sizes = index.approximate_posting_list_sizes_in_bytes();
-                writeln!(term_list_size_file, "{} {}", paragraph_counter, term_list_size)?;
-                writeln!(posting_list_size_file, "{} {:?}", paragraph_counter, posting_list_sizes)?;
+                let (mean, std_dev) = compute_mean_and_std_dev(&posting_list_sizes);
+
+                size_writer.write_record(&[&paragraph_counter.to_string(), &mean.to_string(), &std_dev.to_string()])?;
             }
 
             paragraph_counter += 1;
         }
     }
 
+    indexing_writer.flush()?;
+    querying_writer.flush()?;
+    size_writer.flush()?;
+
     Ok(())
+}
+
+fn compute_mean_and_std_dev(sizes: &[usize]) -> (f64, f64) {
+    if sizes.is_empty() {
+        return (0.0, 0.0);
+    }
+
+    let sum: usize = sizes.iter().sum();
+    let mean = sum as f64 / sizes.len() as f64;
+
+    let variance: f64 = sizes.iter()
+        .map(|&size| {
+            let diff = size as f64 - mean;
+            diff * diff
+        })
+        .sum::<f64>() / sizes.len() as f64;
+
+    let std_dev = variance.sqrt();
+    (mean, std_dev)
 }
 
 fn read_file_into_paragraphs(filename: &str) -> Result<Vec<String>, Box<dyn Error>> {
@@ -165,5 +191,37 @@ mod tests {
         for query in queries {
             assert!(!query.is_empty());
         }
+    }
+
+    #[test]
+    fn test_mean_and_std_dev_typical() {
+        let sizes = vec![1, 2, 3, 4, 5];
+        let (mean, std_dev) = compute_mean_and_std_dev(&sizes);
+        assert_eq!(mean, 3.0);
+        assert!((std_dev - 1.41421356237).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_mean_and_std_dev_empty() {
+        let sizes: Vec<usize> = vec![];
+        let (mean, std_dev) = compute_mean_and_std_dev(&sizes);
+        assert_eq!(mean, 0.0);
+        assert_eq!(std_dev, 0.0);
+    }
+
+    #[test]
+    fn test_mean_and_std_dev_large_numbers() {
+        let sizes = vec![1_000_000, 2_000_000, 3_000_000];
+        let (mean, std_dev) = compute_mean_and_std_dev(&sizes);
+        assert_eq!(mean, 2_000_000.0);
+        assert!((std_dev - 816496.580927726).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_mean_and_std_dev_single_element() {
+        let sizes = vec![42];
+        let (mean, std_dev) = compute_mean_and_std_dev(&sizes);
+        assert_eq!(mean, 42.0);
+        assert_eq!(std_dev, 0.0);
     }
 }
