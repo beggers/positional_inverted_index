@@ -41,10 +41,6 @@ fn main() {
             .about("Prints the approximate size of each posting list in bytes"))
         .subcommand(SubCommand::with_name("benchmark")
             .about("Runs a benchmarking suite")
-            .arg(Arg::with_name("Filenames")
-                .help("The filenames to index")
-                .required(true)
-                .multiple(true))
             .arg(Arg::with_name("Query Frequency")
                 .help("Frequency of queries during benchmarking")
                 .required(true))
@@ -56,7 +52,11 @@ fn main() {
                 .required(true))
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to store benchmark results")
-                .required(true)))
+                .required(true))
+            .arg(Arg::with_name("Filenames")
+                .help("The filenames to index")
+                .required(true)
+                .multiple(true)))
         .get_matches();
 
     let index_path = matches.value_of("INDEX").unwrap();

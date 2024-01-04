@@ -25,3 +25,11 @@ Approximate term list size in bytes: 216
 $ cargo run $INDEX_NAME posting_list_sizes
 Approximate posting list sizes in bytes: [16, 32, 32, 48, 48, 48]
 ```
+
+# Benchmarking
+
+```sh
+$ INDEX_NAME=indices/frankenstein
+$ cargo run -- $INDEX_NAME benchmark 50 3 3 results/frankenstein "benchmarking_data/frankenstein.txt"
+Benchmark completed successfully
+```
