@@ -1,8 +1,10 @@
 mod benchmark;
 mod idx;
+mod plot;
 
 use benchmark::benchmark_index;
 use idx::PositionalInvertedIndex;
+use plot::plot_indexing_duration;
 use clap::{
     App,
     Arg,
@@ -57,6 +59,11 @@ fn main() {
                 .help("The filenames to index")
                 .required(true)
                 .multiple(true)))
+        .subcommand(SubCommand::with_name("plot_indexing_duration")
+            .about("Plots benchmarking results")
+            .arg(Arg::with_name("Target Directory")
+                .help("The target directory to read benchmark results and write the plot")
+                .required(true)))
         .get_matches();
 
     let index_path = matches.value_of("INDEX").unwrap();
@@ -98,6 +105,14 @@ fn main() {
             match benchmark_index(filenames, query_frequency, num_queries, max_query_tokens, target_directory) {
                 Ok(_) => println!("Benchmark completed successfully"),
                 Err(e) => println!("Benchmark failed: {}", e),
+            }
+        },
+        ("plot_indexing_duration", Some(sub_m)) => {
+            let target_directory = sub_m.value_of("Target Directory").unwrap();
+
+            match plot_indexing_duration(target_directory) {
+                Ok(_) => println!("Plot completed successfully"),
+                Err(e) => println!("Plot failed: {}", e),
             }
         },
         _ => panic!("You must specify a subcommand: either 'index' or 'search'"),
