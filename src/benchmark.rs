@@ -19,6 +19,8 @@ pub fn benchmark_index(
 ) -> Result<(), Box<dyn Error>> {
     let mut index = PositionalInvertedIndex::new();
 
+    fs::create_dir_all(target_directory)?;
+
     let indexing_time_file_path = Path::new(target_directory).join("indexing_time.txt");
     let search_time_file_path = Path::new(target_directory).join("search_time.txt");
     let term_list_size_file_path = Path::new(target_directory).join("term_list_size.txt");
