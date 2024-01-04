@@ -31,7 +31,7 @@ pub fn benchmark_index(
     let mut size_writer = Writer::from_path(size_csv_path)?;
 
     indexing_writer.write_record(&["Document Count", "Indexing Duration"])?;
-    querying_writer.write_record(&["Document Count", "Query Duration"])?;
+    querying_writer.write_record(&["Document Count", "Toknes in Query", "Query Duration"])?;
     size_writer.write_record(&["Paragraph", "Mean Posting List Size", "Std Dev Posting List Size"])?;
 
     for filename in filenames {
@@ -49,7 +49,6 @@ pub fn benchmark_index(
             indexing_writer.write_record(&[&paragraph_counter.to_string(), &format!("{:?}", indexing_duration)])?;
 
             if paragraph_counter % query_frequency == 0 {
-
                 let queries = generate_queries_from_fixed_dictionary(num_queries, max_query_tokens);
                 for query in queries {
                     let query_start = Instant::now();
@@ -57,7 +56,7 @@ pub fn benchmark_index(
                     let query_duration = query_start.elapsed();
 
                     let tokens_in_query = query.split_whitespace().count();
-                    querying_writer.write_record(&[&paragraph_counter.to_string(), &format!("{:?}", query_duration)])?;
+                    querying_writer.write_record(&[&paragraph_counter.to_string(), &tokens_in_query.to_string(), &format!("{:?}", query_duration)])?;
                 }
 
                 let posting_list_sizes = index.approximate_posting_list_sizes_in_bytes();

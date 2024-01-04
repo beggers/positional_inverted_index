@@ -1,6 +1,7 @@
 mod benchmark;
 mod idx;
 
+use benchmark::benchmark_index;
 use idx::PositionalInvertedIndex;
 use clap::{
     App,
@@ -38,6 +39,24 @@ fn main() {
             .about("Prints the approximate size of the term list in bytes"))
         .subcommand(SubCommand::with_name("posting_list_sizes")
             .about("Prints the approximate size of each posting list in bytes"))
+        .subcommand(SubCommand::with_name("benchmark")
+            .about("Runs a benchmarking suite")
+            .arg(Arg::with_name("Filenames")
+                .help("The filenames to index")
+                .required(true)
+                .multiple(true))
+            .arg(Arg::with_name("Query Frequency")
+                .help("Frequency of queries during benchmarking")
+                .required(true))
+            .arg(Arg::with_name("Num Queries")
+                .help("Number of queries to run")
+                .required(true))
+            .arg(Arg::with_name("Max Query Tokens")
+                .help("Maximum number of tokens per query")
+                .required(true))
+            .arg(Arg::with_name("Target Directory")
+                .help("The target directory to store benchmark results")
+                .required(true)))
         .get_matches();
 
     let index_path = matches.value_of("INDEX").unwrap();
@@ -68,6 +87,18 @@ fn main() {
         },
         ("posting_list_sizes", Some(_)) => {
             println!("Approximate posting list sizes in bytes: {:?}", index.approximate_posting_list_sizes_in_bytes());
+        },
+        ("benchmark", Some(sub_m)) => {
+            let filenames: Vec<String> = sub_m.values_of("Filenames").unwrap().map(|s| s.to_string()).collect();
+            let query_frequency = sub_m.value_of("Query Frequency").unwrap().parse::<usize>().expect("Invalid Query Frequency");
+            let num_queries = sub_m.value_of("Num Queries").unwrap().parse::<usize>().expect("Invalid Num Queries");
+            let max_query_tokens = sub_m.value_of("Max Query Tokens").unwrap().parse::<usize>().expect("Invalid Max Query Tokens");
+            let target_directory = sub_m.value_of("Target Directory").unwrap();
+
+            match benchmark_index(filenames, query_frequency, num_queries, max_query_tokens, target_directory) {
+                Ok(_) => println!("Benchmark completed successfully"),
+                Err(e) => println!("Benchmark failed: {}", e),
+            }
         },
         _ => panic!("You must specify a subcommand: either 'index' or 'search'"),
     }
