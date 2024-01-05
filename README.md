@@ -2,6 +2,12 @@
 
 A positional inverted index is the core data structure underyling many (most? all?) full-text search engines. The best explanation of them I'm aware of is in Stanford's Information Retrieval textbook: https://nlp.stanford.edu/IR-book/html/htmledition/positional-indexes-1.html
 
+# Results
+
+I implemented a basic positional inverted index and benchmarked in a few different ways. The results convinced me that we don't need to do any special optimization on the core data structures and algorithms beyond finding an efficient way to get and update posting lists in S3.
+
+Query latency is acceptably low (< 80 ms mean, <200 ms max) even for a relatively large corpus with pathologically chosen inputs. See results for more data.
+
 # Basics
 
 This repo implements a positional inverted index and a basic CLI to interact with it.

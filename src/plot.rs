@@ -4,6 +4,14 @@ use std::{
     path::Path
 };
 
+pub fn plot_all(target_dir: &str) -> Result<(), Box<dyn Error>> {
+    plot_index_latency(target_dir)?;
+    plot_query_latency(target_dir)?;
+    plot_term_list_sizes(target_dir)?;
+    plot_posting_list_distribution(target_dir)?;
+    Ok(())
+}
+
 pub fn plot_index_latency(target_dir: &str) -> Result<(), Box<dyn Error>> {
     let input_path = Path::new(target_dir).join("index_latency.csv");
     let output_path = Path::new(target_dir).join("index_latency.png");

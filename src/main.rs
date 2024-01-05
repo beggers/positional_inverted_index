@@ -107,13 +107,10 @@ fn main() {
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to read benchmark results and write the plot")
                 .required(true)))
-        .subcommand(SubCommand::with_name("plot_top_n_queries")
-            .about("Plots the top N most expensive queries")
+        .subcommand(SubCommand::with_name("plot_all")
+            .about("Plots all benchmark results")
             .arg(Arg::with_name("Target Directory")
-                .help("The target directory to read benchmark results and write the plot")
-                .required(true))
-            .arg(Arg::with_name("N")
-                .help("The number of queries to plot")
+                .help("The target directory to read benchmark results and write the plots")
                 .required(true)))
         .get_matches();
 
@@ -199,6 +196,14 @@ fn main() {
             let target_directory = sub_m.value_of("Target Directory").unwrap();
 
             match plot::plot_term_list_sizes(target_directory) {
+                Ok(_) => println!("Plot completed successfully"),
+                Err(e) => println!("Plot failed: {}", e),
+            }
+        },
+        ("plot_all", Some(sub_m)) => {
+            let target_directory = sub_m.value_of("Target Directory").unwrap();
+
+            match plot::plot_all(target_directory) {
                 Ok(_) => println!("Plot completed successfully"),
                 Err(e) => println!("Plot failed: {}", e),
             }
