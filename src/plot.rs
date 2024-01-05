@@ -68,6 +68,37 @@ pub fn plot_query_latency(target_dir: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+pub fn plot_term_list_sizes(target_dir: &str) -> Result<(), Box<dyn Error>> {
+    let input_path = Path::new(target_dir).join("term_list_sizes.csv");
+    let output_path = Path::new(target_dir).join("term_list_sizes.png");
+
+    let mut rdr = csv::Reader::from_path(input_path)?;
+    let mut data = Vec::new();
+    let mut max_document_count = 0;
+    let mut y_axis_upper_bound = 0;
+
+    for result in rdr.records() {
+        let record = result?;
+        let document_count: i32 = record[0].parse().unwrap();
+        let term_list_size: u128 = record[1].parse().unwrap();
+
+        data.push((document_count, term_list_size));
+        max_document_count = max_document_count.max(document_count);
+        y_axis_upper_bound = y_axis_upper_bound.max(term_list_size);
+    }
+
+    plot_documents_to_latency_chart(
+        data.clone(), 
+        &output_path, 
+        max_document_count,
+        y_axis_upper_bound, 
+        "Document Count vs Term List Size (bytes)",
+        "Document Count",
+        "Term List Size (bytes)",
+    )?;
+    Ok(())
+}
+
 pub fn plot_posting_list_distribution(target_dir: &str) -> Result<(), Box<dyn Error>> {
     let input_path = Path::new(target_dir).join("posting_list_sizes.csv");
     let output_path = Path::new(target_dir).join("posting_list_sizes.png");

@@ -94,6 +94,11 @@ fn main() {
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to read benchmark results and write the plot")
                 .required(true)))
+        .subcommand(SubCommand::with_name("plot_term_list_sizes")
+            .about("Plots the term list sizes")
+            .arg(Arg::with_name("Target Directory")
+                .help("The target directory to read benchmark results and write the plot")
+                .required(true)))
         .subcommand(SubCommand::with_name("plot_top_n_queries")
             .about("Plots the top N most expensive queries")
             .arg(Arg::with_name("Target Directory")
@@ -173,6 +178,14 @@ fn main() {
             let target_directory = sub_m.value_of("Target Directory").unwrap();
 
             match plot::plot_posting_list_distribution(target_directory) {
+                Ok(_) => println!("Plot completed successfully"),
+                Err(e) => println!("Plot failed: {}", e),
+            }
+        },
+        ("plot_term_list_sizes", Some(sub_m)) => {
+            let target_directory = sub_m.value_of("Target Directory").unwrap();
+
+            match plot::plot_term_list_sizes(target_directory) {
                 Ok(_) => println!("Plot completed successfully"),
                 Err(e) => println!("Plot failed: {}", e),
             }
