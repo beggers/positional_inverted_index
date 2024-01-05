@@ -1,3 +1,7 @@
+use rand::{
+    distributions::{Distribution, WeightedIndex},
+    thread_rng
+};
 use serde::{
     Serialize,
     Deserialize
@@ -10,12 +14,14 @@ use std::{
 #[derive(Serialize, Deserialize)]
 pub struct PositionalInvertedIndex {
     index: HashMap<String, HashMap<usize, Vec<usize>>>,
+    term_frequencies: HashMap<String, usize>,
 }
 
 impl PositionalInvertedIndex {
     pub fn new() -> Self {
         PositionalInvertedIndex {
             index: HashMap::new(),
+            term_frequencies: HashMap::new(),
         }
     }
 
@@ -28,6 +34,7 @@ impl PositionalInvertedIndex {
                 .entry(doc_id)
                 .or_default()
                 .push(pos);
+            *self.term_frequencies.entry(token.clone()).or_insert(0) += 1;
         }
     }
 
@@ -83,6 +90,28 @@ impl PositionalInvertedIndex {
         }
         results.sort();
         results
+    }
+
+    pub fn get_random_terms(&self, n: usize) -> Vec<String> {
+        if self.term_frequencies.is_empty() {
+            return vec![];
+        }
+        if n == 0 {
+            return vec![];
+        }
+
+        let mut rng = thread_rng();
+        let terms: Vec<&String> = self.term_frequencies.keys().collect();
+        let weights: Vec<&usize> = self.term_frequencies.values().collect();
+
+        let dist = WeightedIndex::new(weights).unwrap();
+        let mut random_terms = Vec::new();
+
+        for _ in 0..n {
+            random_terms.push(terms[dist.sample(&mut rng)].clone());
+        }
+
+        random_terms
     }
 
     pub fn approximate_term_list_size_in_bytes(&self) -> usize {
@@ -276,5 +305,49 @@ mod tests {
         for i in 0..3 {
             assert!(initial_sizes[i] < final_sizes[i]);
         }
+    }
+
+    #[test]
+    fn test_get_random_terms_count() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "apple orange banana");
+        index.index_document(2, "apple banana");
+
+        let random_terms = index.get_random_terms(2);
+        assert_eq!(random_terms.len(), 2);
+    }
+
+    #[test]
+    fn test_get_random_terms_distribution() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "apple apple apple orange banana");
+        index.index_document(2, "banana apple");
+
+        let mut apple_count = 0;
+        let total_count = 1000;
+        for _ in 0..total_count {
+            let random_terms = index.get_random_terms(1);
+            if random_terms.contains(&"apple".to_string()) {
+                apple_count += 1;
+            }
+        }
+
+        assert!(apple_count > total_count / 3);
+    }
+
+    #[test]
+    fn test_get_random_terms_with_empty_index() {
+        let index = PositionalInvertedIndex::new();
+        let random_terms = index.get_random_terms(2);
+        assert!(random_terms.is_empty());
+    }
+
+    #[test]
+    fn test_get_random_terms_more_than_unique_terms() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "apple orange");
+
+        let random_terms = index.get_random_terms(5);
+        assert_eq!(random_terms.len(), 5);
     }
 }
