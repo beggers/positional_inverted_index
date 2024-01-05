@@ -42,3 +42,5 @@ Benchmark completed successfully
 $ cargo run -- $INDEX_NAME plot_indexing_duration results/many_books_small_queries
 Plot completed successfully
 ```
+
+...but you should probably just use an online free CSV plotter/explorer.
