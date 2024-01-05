@@ -114,7 +114,9 @@ impl PositionalInvertedIndex {
 
     pub fn approximate_term_list_size_in_bytes(&self) -> usize {
         // Average English word is length 4.
-        return std::mem::size_of_val(&self.index) + &self.index.len() * (mem::size_of::<String>()+4);
+        let term_list_size = std::mem::size_of_val(&self.index) + &self.index.len() * (mem::size_of::<String>()+4);
+        let term_frequency_list_size = std::mem::size_of_val(&self.term_frequencies) + &self.term_frequencies.len() * (mem::size_of::<String>()+mem::size_of::<usize>());
+        return term_list_size + term_frequency_list_size;
     }
 
     pub fn approximate_posting_list_sizes_in_bytes(&self) -> Vec<usize> {

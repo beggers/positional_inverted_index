@@ -4,9 +4,9 @@ use std::{
     path::Path
 };
 
-pub fn plot_indexing_duration(target_dir: &str) -> Result<(), Box<dyn Error>> {
-    let input_path = Path::new(target_dir).join("indexing_data.csv");
-    let output_path = Path::new(target_dir).join("indexing_data.png");
+pub fn plot_index_latency(target_dir: &str) -> Result<(), Box<dyn Error>> {
+    let input_path = Path::new(target_dir).join("index_latency.csv");
+    let output_path = Path::new(target_dir).join("index_latency.png");
 
     let mut rdr = csv::Reader::from_path(input_path)?;
     let mut data = Vec::new();
@@ -28,16 +28,16 @@ pub fn plot_indexing_duration(target_dir: &str) -> Result<(), Box<dyn Error>> {
         &output_path, 
         data.len() as i32,
         y_axis_upper_bound, 
-        "Document Count vs Index Duration (µs)", 
+        "Document Count vs Index Latency (µs)", 
         "Document Count", 
-        "Index Duration (µs)",
+        "Index Latency (µs)",
     )?;
     Ok(())
 }
 
-pub fn plot_query_duration(target_dir: &str) -> Result<(), Box<dyn Error>> {
-    let input_path = Path::new(target_dir).join("querying_data.csv");
-    let output_path = Path::new(target_dir).join("querying_data.png");
+pub fn plot_query_latency(target_dir: &str) -> Result<(), Box<dyn Error>> {
+    let input_path = Path::new(target_dir).join("query_latency.csv");
+    let output_path = Path::new(target_dir).join("query_latency.png");
 
     let mut rdr = csv::Reader::from_path(input_path)?;
     let mut data = Vec::new();
@@ -64,9 +64,9 @@ pub fn plot_query_duration(target_dir: &str) -> Result<(), Box<dyn Error>> {
         &output_path, 
         x_axis_upper_bound,
         y_axis_upper_bound, 
-        &("Document Count vs Query Duration (µs) - Max Query Tokens: ".to_owned() + &max_query_tokens.to_string()), 
+        &("Document Count vs Query Latency (µs) - Max Query Tokens: ".to_owned() + &max_query_tokens.to_string()), 
         "Document Count", 
-        "Query Duration (µs)",
+        "Query Latency (µs)",
     )?;
     Ok(())
 }

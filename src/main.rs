@@ -6,8 +6,8 @@ mod query_tokens;
 use benchmark::benchmark_index;
 use idx::PositionalInvertedIndex;
 use plot::{
-    plot_indexing_duration,
-    plot_query_duration
+    plot_index_latency,
+    plot_query_latency
 };
 use query_tokens::{
     QueryTokenDistribution
@@ -79,15 +79,23 @@ fn main() {
                 .help("The filenames to index")
                 .required(true)
                 .multiple(true)))
-        .subcommand(SubCommand::with_name("plot_indexing_duration")
+        .subcommand(SubCommand::with_name("plot_index_latency")
             .about("Plots indexing duration results")
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to read benchmark results and write the plot")
                 .required(true)))
-        .subcommand(SubCommand::with_name("plot_query_duration")
+        .subcommand(SubCommand::with_name("plot_query_latency")
             .about("Plots query duration results")
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to read benchmark results and write the plot")
+                .required(true)))
+        .subcommand(SubCommand::with_name("plot_top_n_queries")
+            .about("Plots the top N most expensive queries")
+            .arg(Arg::with_name("Target Directory")
+                .help("The target directory to read benchmark results and write the plot")
+                .required(true))
+            .arg(Arg::with_name("N")
+                .help("The number of queries to plot")
                 .required(true)))
         .get_matches();
 
@@ -140,18 +148,18 @@ fn main() {
                 Err(e) => println!("Benchmark failed: {}", e),
             }
         },
-        ("plot_indexing_duration", Some(sub_m)) => {
+        ("plot_index_latency", Some(sub_m)) => {
             let target_directory = sub_m.value_of("Target Directory").unwrap();
 
-            match plot_indexing_duration(target_directory) {
+            match plot_index_latency(target_directory) {
                 Ok(_) => println!("Plot completed successfully"),
                 Err(e) => println!("Plot failed: {}", e),
             }
         },
-        ("plot_query_duration", Some(sub_m)) => {
+        ("plot_query_latency", Some(sub_m)) => {
             let target_directory = sub_m.value_of("Target Directory").unwrap();
 
-            match plot_query_duration(target_directory) {
+            match plot_query_latency(target_directory) {
                 Ok(_) => println!("Plot completed successfully"),
                 Err(e) => println!("Plot failed: {}", e),
             }

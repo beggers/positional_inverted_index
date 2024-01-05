@@ -28,20 +28,23 @@ pub fn benchmark_index(
 
     fs::create_dir_all(target_directory)?;
 
-    let indexing_csv_path = Path::new(target_directory).join("indexing_data.csv");
-    let querying_csv_path = Path::new(target_directory).join("querying_data.csv");
-    let size_csv_path = Path::new(target_directory).join("size_data.csv");
-    let final_sizes_csv_path = Path::new(target_directory).join("final_sizes.csv");
+    let indexing_csv_path = Path::new(target_directory).join("index_latency.csv");
+    let querying_csv_path = Path::new(target_directory).join("query_latency.csv");
+    let posting_list_size_csv_path = Path::new(target_directory).join("posting_list_sizes.csv");
+    let term_list_size_csv_path = Path::new(target_directory).join("term_list_sizes.csv");
+    let final_posting_list_sizes_csv_path = Path::new(target_directory).join("final_posting_list_sizes.csv");
 
     let mut indexing_writer = Writer::from_path(indexing_csv_path)?;
     let mut querying_writer = Writer::from_path(querying_csv_path)?;
-    let mut size_writer = Writer::from_path(size_csv_path)?;
-    let mut final_sizes_writer = Writer::from_path(final_sizes_csv_path)?;
+    let mut term_list_size_writer = Writer::from_path(term_list_size_csv_path)?;
+    let mut posting_list_size_writer = Writer::from_path(posting_list_size_csv_path)?;
+    let mut final_posting_list_sizes_writer = Writer::from_path(final_posting_list_sizes_csv_path)?;
 
     indexing_writer.write_record(&["Document Count", "Indexing Duration Micros", "Start of Document"])?;
     querying_writer.write_record(&["Document Count", "Query", "Query Duration Micros"])?;
-    size_writer.write_record(&["Document Count", "Mean Posting List Size", "Std Dev Posting List Size"])?;
-    final_sizes_writer.write_record(&["Term", "Posting List Size"])?;
+    term_list_size_writer.write_record(&["Document Count", "Term List Size"])?;
+    posting_list_size_writer.write_record(&["Document Count", "Mean Posting List Size", "Std Dev Posting List Size"])?;
+    final_posting_list_sizes_writer.write_record(&["Term", "Posting List Size"])?;
 
     let mut paragraph_counter = 0;
     for filename in filenames {
@@ -81,7 +84,10 @@ pub fn benchmark_index(
                 let posting_list_sizes = index.approximate_posting_list_sizes_in_bytes();
                 let (mean, std_dev) = compute_mean_and_std_dev(&posting_list_sizes);
 
-                size_writer.write_record(&[&paragraph_counter.to_string(), &mean.to_string(), &std_dev.to_string()])?;
+                posting_list_size_writer.write_record(&[&paragraph_counter.to_string(), &mean.to_string(), &std_dev.to_string()])?;
+
+                let term_list_size = index.approximate_term_list_size_in_bytes();
+                term_list_size_writer.write_record(&[&paragraph_counter.to_string(), &term_list_size.to_string()])?;
             }
 
             paragraph_counter += 1;
@@ -90,12 +96,14 @@ pub fn benchmark_index(
 
     let posting_list_sizes_by_term = index.approximate_posting_list_sizes_in_bytes_by_term();
     for (term, size) in posting_list_sizes_by_term {
-        final_sizes_writer.write_record(&[&term, &size.to_string()])?;
+        final_posting_list_sizes_writer.write_record(&[&term, &size.to_string()])?;
     }
 
     indexing_writer.flush()?;
     querying_writer.flush()?;
-    size_writer.flush()?;
+    term_list_size_writer.flush()?;
+    posting_list_size_writer.flush()?;
+    final_posting_list_sizes_writer.flush()?;
 
     Ok(())
 }
@@ -129,8 +137,6 @@ fn read_file_into_paragraphs(filename: &str) -> Result<Vec<String>, Box<dyn Erro
                         .collect::<Vec<_>>();
     Ok(paragraphs)
 }
-
-
 
 #[cfg(test)]
 mod tests {
