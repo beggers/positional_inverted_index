@@ -7,6 +7,7 @@ use benchmark::benchmark_index;
 use idx::PositionalInvertedIndex;
 use plot::{
     plot_index_latency,
+    plot_posting_list_distribution,
     plot_query_latency
 };
 use query_tokens::{
@@ -89,6 +90,11 @@ fn main() {
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to read benchmark results and write the plot")
                 .required(true)))
+        .subcommand(SubCommand::with_name("plot_posting_list_distribution")
+            .about("Plots the distribution of posting list sizes")
+            .arg(Arg::with_name("Target Directory")
+                .help("The target directory to read benchmark results and write the plot")
+                .required(true)))
         .subcommand(SubCommand::with_name("plot_top_n_queries")
             .about("Plots the top N most expensive queries")
             .arg(Arg::with_name("Target Directory")
@@ -160,6 +166,14 @@ fn main() {
             let target_directory = sub_m.value_of("Target Directory").unwrap();
 
             match plot_query_latency(target_directory) {
+                Ok(_) => println!("Plot completed successfully"),
+                Err(e) => println!("Plot failed: {}", e),
+            }
+        },
+        ("plot_posting_list_distribution", Some(sub_m)) => {
+            let target_directory = sub_m.value_of("Target Directory").unwrap();
+
+            match plot_posting_list_distribution(target_directory) {
                 Ok(_) => println!("Plot completed successfully"),
                 Err(e) => println!("Plot failed: {}", e),
             }
