@@ -111,6 +111,7 @@ pub fn plot_query_latency(target_dir: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+<<<<<<< HEAD
 pub fn plot_posting_list_distribution(target_dir: &str) -> Result<(), Box<dyn Error>> {
     let input_path = Path::new(target_dir).join("posting_list_sizes.csv");
     let output_path = Path::new(target_dir).join("posting_list_sizes.png");
@@ -192,6 +193,8 @@ fn plot_line_with_std_dev(
     Ok(())
 }
 
+=======
+>>>>>>> parent of 7ca681f (Posting list sizes graphing)
 fn plot_documents_to_latency_chart(
     data: Vec<(i32, u128)>, 
     output_path: &Path, 
