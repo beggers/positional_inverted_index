@@ -4,7 +4,8 @@ use std::collections::HashMap;
 #[derive(PartialEq)]
 pub enum QueryTokenDistribution {
     Fixed,
-    Uniform
+    Uniform,
+    FromDocument
 }
 
 pub fn generate_queries_from_fixed_dictionary(num_queries: usize, max_tokens: usize) -> Vec<String> {
@@ -47,6 +48,28 @@ pub fn generate_queries_from_distribution(num_queries: usize, max_tokens: usize,
             .collect::<Vec<&str>>()
             .join(" ");
         queries.push(query);
+    }
+
+    queries
+}
+
+pub fn pull_query_from_paragraph(paragraph: &str, num_queries: usize, max_tokens: usize) -> Vec<String> {
+    if paragraph.is_empty() || num_queries == 0 {
+        return vec![];
+    }
+
+    let tokens: Vec<&str> = paragraph.split_whitespace().collect();
+    if tokens.len() < max_tokens {
+        panic!("Not enough tokens in the paragraph to satisfy the request");
+    }
+
+    let mut rng = rand::thread_rng();
+    let mut queries = Vec::with_capacity(num_queries);
+
+    for _ in 0..num_queries {
+        let query_length = rng.gen_range(1..=max_tokens.min(tokens.len()));
+        let selected_tokens = tokens.choose_multiple(&mut rng, query_length).cloned().collect::<Vec<_>>();
+        queries.push(selected_tokens.join(" "));
     }
 
     queries
@@ -137,7 +160,7 @@ mod tests {
     }
 
     #[test]
-    fn varying_weights() {
+    fn test_distribution_varying_weights() {
         let terms = HashMap::from([("common".to_string(), 10), ("rare".to_string(), 1)]);
         let mut term_counts = HashMap::new();
 
@@ -154,5 +177,39 @@ mod tests {
         let common_count = *term_counts.get("common").unwrap_or(&0);
         let rare_count = *term_counts.get("rare").unwrap_or(&0);
         assert!(common_count > rare_count);
+    }
+
+    #[test]
+    fn test_query_from_paragraph_basic_functionality() {
+        let paragraph = "This is a test paragraph with several words";
+        let queries = pull_query_from_paragraph(paragraph, 3, 4);
+        assert_eq!(queries.len(), 3);
+        for query in queries {
+            assert!(query.split_whitespace().count() <= 4);
+            for token in query.split_whitespace() {
+                assert!(paragraph.contains(token));
+            }
+        }
+    }
+
+    #[test]
+    fn test_query_from_paragraph_empty_paragraph() {
+        let paragraph = "";
+        let queries = pull_query_from_paragraph(paragraph, 3, 4);
+        assert!(queries.iter().all(|query| query.is_empty()));
+    }
+
+    #[test]
+    #[should_panic(expected = "Not enough tokens in the paragraph to satisfy the request")]
+    fn test_query_from_paragraph_max_tokens_exceeding_paragraph_length() {
+        let paragraph = "Short paragraph";
+        pull_query_from_paragraph(paragraph, 3, 10);
+    }
+
+    #[test]
+    fn test_query_from_paragraph_num_queries_zero() {
+        let paragraph = "This is a test paragraph with several words";
+        let queries = pull_query_from_paragraph(paragraph, 0, 4);
+        assert!(queries.is_empty());
     }
 }

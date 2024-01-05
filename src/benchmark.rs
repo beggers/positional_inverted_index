@@ -2,6 +2,7 @@ use crate::PositionalInvertedIndex;
 use crate::query_tokens::{
     generate_queries_from_fixed_dictionary,
     generate_queries_from_distribution,
+    pull_query_from_paragraph,
     QueryTokenDistribution
 };
 
@@ -30,14 +31,17 @@ pub fn benchmark_index(
     let indexing_csv_path = Path::new(target_directory).join("indexing_data.csv");
     let querying_csv_path = Path::new(target_directory).join("querying_data.csv");
     let size_csv_path = Path::new(target_directory).join("size_data.csv");
+    let final_sizes_csv_path = Path::new(target_directory).join("final_sizes.csv");
 
     let mut indexing_writer = Writer::from_path(indexing_csv_path)?;
     let mut querying_writer = Writer::from_path(querying_csv_path)?;
     let mut size_writer = Writer::from_path(size_csv_path)?;
+    let mut final_sizes_writer = Writer::from_path(final_sizes_csv_path)?;
 
-    indexing_writer.write_record(&["Document Count", "Indexing Duration Micros"])?;
+    indexing_writer.write_record(&["Document Count", "Indexing Duration Micros", "Start of Document"])?;
     querying_writer.write_record(&["Document Count", "Tokens in Query", "Query Duration Micros"])?;
     size_writer.write_record(&["Document Count", "Mean Posting List Size", "Std Dev Posting List Size"])?;
+    final_sizes_writer.write_record(&["Term", "Posting List Size"])?;
 
     let mut paragraph_counter = 0;
     for filename in filenames {
@@ -52,14 +56,19 @@ pub fn benchmark_index(
             let start = Instant::now();
             index.index_document(paragraph_counter, &paragraph);
             let indexing_duration_micros = start.elapsed().as_micros();
-            indexing_writer.write_record(&[&paragraph_counter.to_string(), &indexing_duration_micros.to_string()])?;
+            let first_seven = paragraph.split_whitespace().take(7).collect::<Vec<&str>>().join(" ");
+            indexing_writer.write_record(&[&paragraph_counter.to_string(), &indexing_duration_micros.to_string(), &first_seven])?;
 
             if paragraph_counter % query_frequency == 0 {
                 let queries = if query_token_distribution == QueryTokenDistribution::Fixed {
                     generate_queries_from_fixed_dictionary(num_queries, max_query_tokens)
-                } else {
+                } else if query_token_distribution == QueryTokenDistribution::Uniform {
                     let terms = index.get_random_terms(max_query_tokens);
                     generate_queries_from_distribution(num_queries, max_query_tokens, &terms)
+                } else if query_token_distribution == QueryTokenDistribution::FromDocument {
+                    pull_query_from_paragraph(&paragraph, num_queries, max_query_tokens)
+                } else {
+                    panic!("Invalid query token distribution")
                 };
                 for query in queries {
                     let query_start = Instant::now();
@@ -78,6 +87,11 @@ pub fn benchmark_index(
 
             paragraph_counter += 1;
         }
+    }
+
+    let posting_list_sizes_by_term = index.approximate_posting_list_sizes_in_bytes_by_term();
+    for (term, size) in posting_list_sizes_by_term {
+        final_sizes_writer.write_record(&[&term, &size.to_string()])?;
     }
 
     indexing_writer.flush()?;

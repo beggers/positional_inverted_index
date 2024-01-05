@@ -70,7 +70,7 @@ fn main() {
             .arg(Arg::with_name("query_token_distribution")
                 .help("The distribution of query tokens")
                 .takes_value(true)
-                .possible_values(&["fixed", "uniform"])
+                .possible_values(&["fixed", "uniform", "from_document"])
                 .required(true))
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to store benchmark results")
@@ -132,10 +132,11 @@ fn main() {
             let query_token_distribution = match sub_m.value_of("query_token_distribution").unwrap() {
                 "fixed" => QueryTokenDistribution::Fixed,
                 "uniform" => QueryTokenDistribution::Uniform,
+                "from_document" => QueryTokenDistribution::FromDocument,
                 _ => panic!("Invalid query token distribution"),
             };
             match benchmark_index(filenames, query_frequency, num_queries, max_query_tokens, query_token_distribution, target_directory) {
-                Ok(_) => println!("Benchmark completed successfully"),
+                Ok(_) => println!("Benchmarking {} completed successfully", target_directory),
                 Err(e) => println!("Benchmark failed: {}", e),
             }
         },

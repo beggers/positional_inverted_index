@@ -131,6 +131,19 @@ impl PositionalInvertedIndex {
         sizes.sort();
         sizes
     }
+
+    pub fn approximate_posting_list_sizes_in_bytes_by_term(&self) -> HashMap<String, usize> {
+        let mut sizes = HashMap::new();
+        for (term, posting_list) in &self.index {
+            let mut size = 0;
+            for (_doc_id, positions) in posting_list {
+                // Add 1 to account for the doc ID.
+                size += (positions.len() + 1) * mem::size_of::<usize>();
+            }
+            sizes.insert(term.clone(), size);
+        }
+        sizes
+    }
 }
 
 #[cfg(test)]
@@ -361,5 +374,29 @@ mod tests {
 
         let random_terms = index.get_random_terms(5);
         assert_eq!(random_terms.len(), 2);
+    }
+
+    #[test]
+    fn test_posting_list_sizes_by_term_empty_index() {
+        let index = PositionalInvertedIndex::new();
+        assert!(index.approximate_posting_list_sizes_in_bytes_by_term().is_empty());
+    }
+
+    #[test]
+    fn test_posting_list_sizes_by_term_single_term_index() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "term1");
+        let sizes = index.approximate_posting_list_sizes_in_bytes_by_term();
+        assert!(sizes.get("term1").unwrap() > &(0 as usize));
+    }
+
+    #[test]
+    fn test_posting_list_sizes_by_term_multiple_terms() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "apple orange");
+        index.index_document(1, "apple orange banana");
+        let sizes = index.approximate_posting_list_sizes_in_bytes_by_term();
+        assert_eq!(sizes.get("apple").unwrap(), sizes.get("orange").unwrap());
+        assert!(sizes.get("apple").unwrap() > sizes.get("banana").unwrap());
     }
 }
