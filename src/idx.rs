@@ -2,7 +2,6 @@ use rand::{
     distributions::{Distribution, WeightedIndex},
     thread_rng
 };
-use regex::Regex;
 use serde::{
     Serialize,
     Deserialize
@@ -83,12 +82,13 @@ impl PositionalInvertedIndex {
     }
 
     fn get_tokens(content: &str) -> Vec<String> {
-        let re = Regex::new(r"[^\w\s]").unwrap();
-        let tokens = content.split_whitespace()
-                            .map(|s| re.replace_all(s, "").to_lowercase())
-                            .filter(|s| !s.is_empty())
-                            .collect::<Vec<_>>();
-        tokens
+        content.split_whitespace()
+            .map(|s| s.chars()
+                    .filter(|c| c.is_alphanumeric())
+                    .collect::<String>()
+                    .to_lowercase())
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
     }
 
     pub fn get_random_terms(&self, n: usize) -> HashMap<String, usize> {
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_get_tokens_with_mixed_characters() {
-        let content = "Email@example.com is an e-mail address!";
+        let content = "Email@example.com is an,,, e-mail address!";
         let tokens = PositionalInvertedIndex::get_tokens(content);
         assert_eq!(tokens, vec!["emailexamplecom", "is", "an", "email", "address"]);
     }
