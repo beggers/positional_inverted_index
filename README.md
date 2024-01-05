@@ -29,9 +29,9 @@ Approximate posting list sizes in bytes: [16, 32, 32, 48, 48, 48]
 # Benchmarking
 
 ```sh
-$ cargo run -- benchmark 50 3 3 results/frankenstein "benchmarking_data/frankenstein.txt"
+$ cargo run -- benchmark 50 3 3 fixed results/frankenstein "benchmarking_data/frankenstein.txt"
 Benchmark completed successfully
-$ cargo run -- benchmark 50 3 3 results/many_books_small_queries $(find benchmarking_data | grep "/")
+$ cargo run -- benchmark 50 3 3 fixed results/many_books_small_queries $(find benchmarking_data | grep "/")
 Benchmark completed successfully
 ```
 

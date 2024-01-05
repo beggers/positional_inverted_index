@@ -92,23 +92,22 @@ impl PositionalInvertedIndex {
         results
     }
 
-    pub fn get_random_terms(&self, n: usize) -> Vec<String> {
-        if self.term_frequencies.is_empty() {
-            return vec![];
+    pub fn get_random_terms(&self, n: usize) -> HashMap<String, usize> {
+        let mut random_terms = HashMap::new();
+    
+        if self.term_frequencies.is_empty() || n == 0 {
+            return random_terms;
         }
-        if n == 0 {
-            return vec![];
-        }
-
+    
         let mut rng = thread_rng();
         let terms: Vec<&String> = self.term_frequencies.keys().collect();
         let weights: Vec<&usize> = self.term_frequencies.values().collect();
-
+    
         let dist = WeightedIndex::new(weights).unwrap();
-        let mut random_terms = Vec::new();
-
-        for _ in 0..n {
-            random_terms.push(terms[dist.sample(&mut rng)].clone());
+    
+        while random_terms.len() < n && random_terms.len() < self.term_frequencies.len() {
+            let term = terms[dist.sample(&mut rng)].clone();
+            *random_terms.entry(term.to_string()).or_insert(0) = self.term_frequencies[&term];
         }
 
         random_terms
@@ -327,12 +326,25 @@ mod tests {
         let total_count = 1000;
         for _ in 0..total_count {
             let random_terms = index.get_random_terms(1);
-            if random_terms.contains(&"apple".to_string()) {
+            if random_terms.contains_key(&"apple".to_string()) {
                 apple_count += 1;
             }
         }
 
         assert!(apple_count > total_count / 3);
+    }
+
+    #[test]
+    fn test_get_random_terms_correct_weights() {
+        let mut index = PositionalInvertedIndex::new();
+        index.index_document(1, "apple apple apple orange banana");
+        index.index_document(2, "banana apple");
+
+        let random_terms = index.get_random_terms(10);
+
+        assert!(random_terms["apple"] == 4);
+        assert!(random_terms["orange"] == 1);
+        assert!(random_terms["banana"] == 2);
     }
 
     #[test]
@@ -348,6 +360,6 @@ mod tests {
         index.index_document(1, "apple orange");
 
         let random_terms = index.get_random_terms(5);
-        assert_eq!(random_terms.len(), 5);
+        assert_eq!(random_terms.len(), 2);
     }
 }

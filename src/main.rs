@@ -1,12 +1,16 @@
 mod benchmark;
 mod idx;
 mod plot;
+mod query_tokens;
 
 use benchmark::benchmark_index;
 use idx::PositionalInvertedIndex;
 use plot::{
     plot_indexing_duration,
     plot_query_duration
+};
+use query_tokens::{
+    QueryTokenDistribution
 };
 use clap::{
     App,
@@ -62,6 +66,11 @@ fn main() {
                 .required(true))
             .arg(Arg::with_name("Max Query Tokens")
                 .help("Maximum number of tokens per query")
+                .required(true))
+            .arg(Arg::with_name("query_token_distribution")
+                .help("The distribution of query tokens")
+                .takes_value(true)
+                .possible_values(&["fixed", "uniform"])
                 .required(true))
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to store benchmark results")
@@ -120,8 +129,12 @@ fn main() {
             let num_queries = sub_m.value_of("Num Queries").unwrap().parse::<usize>().expect("Invalid Num Queries");
             let max_query_tokens = sub_m.value_of("Max Query Tokens").unwrap().parse::<usize>().expect("Invalid Max Query Tokens");
             let target_directory = sub_m.value_of("Target Directory").unwrap();
-
-            match benchmark_index(filenames, query_frequency, num_queries, max_query_tokens, target_directory) {
+            let query_token_distribution = match sub_m.value_of("query_token_distribution").unwrap() {
+                "fixed" => QueryTokenDistribution::Fixed,
+                "uniform" => QueryTokenDistribution::Uniform,
+                _ => panic!("Invalid query token distribution"),
+            };
+            match benchmark_index(filenames, query_frequency, num_queries, max_query_tokens, query_token_distribution, target_directory) {
                 Ok(_) => println!("Benchmark completed successfully"),
                 Err(e) => println!("Benchmark failed: {}", e),
             }

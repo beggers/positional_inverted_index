@@ -1,7 +1,11 @@
 use crate::PositionalInvertedIndex;
+use crate::query_tokens::{
+    generate_queries_from_fixed_dictionary,
+    generate_queries_from_distribution,
+    QueryTokenDistribution
+};
 
 use csv::Writer;
-use rand::{seq::SliceRandom, thread_rng, Rng};
 use regex::Regex;
 use std::{
     error::Error,
@@ -16,6 +20,7 @@ pub fn benchmark_index(
     query_frequency: usize, 
     num_queries: usize, 
     max_query_tokens: usize,
+    query_token_distribution: QueryTokenDistribution,
     target_directory: &str,
 ) -> Result<(), Box<dyn Error>> {
     let mut index = PositionalInvertedIndex::new();
@@ -36,6 +41,7 @@ pub fn benchmark_index(
 
     let mut paragraph_counter = 0;
     for filename in filenames {
+        println!("Indexing file: {}", filename);
         let paragraphs = read_file_into_paragraphs(&filename)?;
 
         for paragraph in paragraphs {
@@ -49,7 +55,12 @@ pub fn benchmark_index(
             indexing_writer.write_record(&[&paragraph_counter.to_string(), &indexing_duration_micros.to_string()])?;
 
             if paragraph_counter % query_frequency == 0 {
-                let queries = generate_queries_from_fixed_dictionary(num_queries, max_query_tokens);
+                let queries = if query_token_distribution == QueryTokenDistribution::Fixed {
+                    generate_queries_from_fixed_dictionary(num_queries, max_query_tokens)
+                } else {
+                    let terms = index.get_random_terms(max_query_tokens);
+                    generate_queries_from_distribution(num_queries, max_query_tokens, &terms)
+                };
                 for query in queries {
                     let query_start = Instant::now();
                     index.search(&query);
@@ -106,26 +117,7 @@ fn read_file_into_paragraphs(filename: &str) -> Result<Vec<String>, Box<dyn Erro
     Ok(paragraphs)
 }
 
-fn generate_queries_from_fixed_dictionary(num_queries: usize, max_tokens: usize) -> Vec<String> {
-    let dictionary = [
-        "The", "quantity", "respectable", "she", "announced"
-    ];
 
-    let mut rng = thread_rng();
-    let mut queries = Vec::with_capacity(num_queries);
-
-    for _ in 0..num_queries {
-        let query_length = rng.gen_range(1..=max_tokens);
-        let query = dictionary
-            .choose_multiple(&mut rng, query_length)
-            .cloned()
-            .collect::<Vec<&str>>()
-            .join(" ");
-        queries.push(query);
-    }
-
-    queries
-}
 
 #[cfg(test)]
 mod tests {
@@ -158,38 +150,6 @@ mod tests {
         let result = read_file_into_paragraphs(filename);
 
         assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_generate_correct_number_of_queries() {
-        let num_queries = 10;
-        let max_tokens = 5;
-        let queries = generate_queries_from_fixed_dictionary(num_queries, max_tokens);
-
-        assert_eq!(queries.len(), num_queries);
-    }
-
-    #[test]
-    fn test_query_length_within_range() {
-        let num_queries = 10;
-        let max_tokens = 3;
-        let queries = generate_queries_from_fixed_dictionary(num_queries, max_tokens);
-
-        for query in queries {
-            let token_count = query.split_whitespace().count();
-            assert!(token_count > 0 && token_count <= max_tokens);
-        }
-    }
-
-    #[test]
-    fn test_queries_not_empty() {
-        let num_queries = 10;
-        let max_tokens = 3;
-        let queries = generate_queries_from_fixed_dictionary(num_queries, max_tokens);
-
-        for query in queries {
-            assert!(!query.is_empty());
-        }
     }
 
     #[test]
