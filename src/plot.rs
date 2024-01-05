@@ -130,9 +130,9 @@ pub fn plot_posting_list_distribution(target_dir: &str) -> Result<(), Box<dyn Er
         &output_path,
         max_document_count,
         y_axis_upper_bound,
-        "Document Count vs Posting List Size",
+        "Document Count vs Posting List Sizes (bytes)",
         "Document Count",
-        "Size",
+        "Posting List Sizes (bytes)",
     )?;
     Ok(())
 }
