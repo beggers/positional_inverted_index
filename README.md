@@ -29,9 +29,9 @@ Approximate posting list sizes in bytes: [16, 32, 32, 48, 48, 48]
 # Manual Benchmarking
 
 ```sh
-$ cargo run -- benchmark 50 3 3 fixed results/frankenstein "benchmarking_data/frankenstein.txt"
+$ cargo run -- benchmark 50 3 3 uniform frequency results/frankenstein "benchmarking_data/frankenstein.txt"
 Benchmark completed successfully
-$ cargo run -- benchmark 50 3 3 fixed results/many_books_small_queries $(find benchmarking_data | grep "/")
+$ cargo run -- benchmark 50 3 3 uniform frequency results/many_books_small_queries $(find benchmarking_data | grep "/")
 Benchmark completed successfully
 ```
 
@@ -43,3 +43,39 @@ Plot completed successfully
 $ cargo run -- plot_query_duration results/frankenstein
 Plot completed successfully
 ```
+
+# Notes
+
+## Dependent variables
+
+### Documents
+
+[x] Number of documents
+[x] Similarity of documents
+[x] Query length
+[x] Query relevancy (uniformly random characters <-> strings from documents)
+
+### Algorithm
+
+[x] Token-ordered search vs reverse frequency-ordered search
+[ ] Pre-filter step on presence of every token
+[ ] Stop word filtering
+
+## Independent variables
+
+[x] Term list size
+[x] Posting list sizes per documents indexed
+[x] Posting list sizes distribution at end
+[x] Indexing latency
+[x] Query latency
+
+## Graphs
+
+[x] line - Indexing latency per documents indexed
+[ ] line with std dev - That ^
+[x] line - Query latency per documents indexed
+[ ] line with std dev - That ^
+[ ] bar - Most expensive queries (query string, documents, latency)
+[ ] bar - Final posting list sizes
+[x] line with std dev - Posting list size distribution per documents indexed
+[x] line - Term list size distribution per documents indexed
