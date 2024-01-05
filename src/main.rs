@@ -6,6 +6,7 @@ mod query_tokens;
 use benchmark::benchmark_index;
 use idx::{
     PositionalInvertedIndex,
+    TokenOrdering
 };
 use plot::{
     plot_index_latency,
@@ -73,6 +74,11 @@ fn main() {
                 .help("The distribution of query tokens")
                 .takes_value(true)
                 .possible_values(&["fixed", "uniform", "from_document"])
+                .required(true))
+            .arg(Arg::with_name("Token Search Ordering")
+                .help("The ordering of tokens in the query")
+                .takes_value(true)
+                .possible_values(&["query", "frequency"])
                 .required(true))
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to store benchmark results")
@@ -155,7 +161,12 @@ fn main() {
                 "from_document" => QueryTokenDistribution::FromDocument,
                 _ => panic!("Invalid query token distribution"),
             };
-            match benchmark_index(filenames, query_frequency, num_queries, max_query_tokens, query_token_distribution, target_directory) {
+            let token_search_ordering = match sub_m.value_of("Token Search Ordering").unwrap() {
+                "query" => TokenOrdering::TokenOrder,
+                "frequency" => TokenOrdering::AscendingFrequencyOrder,
+                _ => panic!("Invalid token search ordering"),
+            };
+            match benchmark_index(filenames, query_frequency, num_queries, max_query_tokens, query_token_distribution, token_search_ordering, target_directory) {
                 Ok(_) => println!("Benchmarking {} completed successfully", target_directory),
                 Err(e) => println!("Benchmark failed: {}", e),
             }

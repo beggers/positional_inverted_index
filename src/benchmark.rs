@@ -1,5 +1,6 @@
 use crate::idx::{
     PositionalInvertedIndex,
+    TokenOrdering
 };
 use crate::query_tokens::{
     generate_queries_from_fixed_dictionary,
@@ -24,9 +25,10 @@ pub fn benchmark_index(
     num_queries: usize, 
     max_query_tokens: usize,
     query_token_distribution: QueryTokenDistribution,
+    token_search_ordering: TokenOrdering,
     target_directory: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let mut index = PositionalInvertedIndex::new();
+    let mut index = PositionalInvertedIndex::with_ordering(token_search_ordering);
 
     fs::create_dir_all(target_directory)?;
 
