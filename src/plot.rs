@@ -48,12 +48,12 @@ pub fn plot_query_duration(target_dir: &str) -> Result<(), Box<dyn Error>> {
     for result in rdr.records() {
         let record = result?;
         let document_count: i32 = record[0].parse().unwrap();
-        let query_tokens: usize = record[1].parse().unwrap();
+        let query: String = record[1].parse().unwrap();
         let indexing_duration: u128 = record[2].parse().unwrap();
 
         data.push((document_count, indexing_duration));
         max_indexing_duration = max_indexing_duration.max(indexing_duration);
-        max_query_tokens = max_query_tokens.max(query_tokens);
+        max_query_tokens = max_query_tokens.max(query.split_whitespace().count());
         x_axis_upper_bound = x_axis_upper_bound.max(document_count);
     }
 
@@ -64,7 +64,7 @@ pub fn plot_query_duration(target_dir: &str) -> Result<(), Box<dyn Error>> {
         &output_path, 
         x_axis_upper_bound,
         y_axis_upper_bound, 
-        &("Document Count vs Query Duration (µs) - Query Tokens: ".to_owned() + &max_query_tokens.to_string()), 
+        &("Document Count vs Query Duration (µs) - Max Query Tokens: ".to_owned() + &max_query_tokens.to_string()), 
         "Document Count", 
         "Query Duration (µs)",
     )?;

@@ -39,7 +39,7 @@ pub fn benchmark_index(
     let mut final_sizes_writer = Writer::from_path(final_sizes_csv_path)?;
 
     indexing_writer.write_record(&["Document Count", "Indexing Duration Micros", "Start of Document"])?;
-    querying_writer.write_record(&["Document Count", "Tokens in Query", "Query Duration Micros"])?;
+    querying_writer.write_record(&["Document Count", "Query", "Query Duration Micros"])?;
     size_writer.write_record(&["Document Count", "Mean Posting List Size", "Std Dev Posting List Size"])?;
     final_sizes_writer.write_record(&["Term", "Posting List Size"])?;
 
@@ -75,8 +75,7 @@ pub fn benchmark_index(
                     index.search(&query);
                     let query_duration_micros = query_start.elapsed().as_micros();
 
-                    let tokens_in_query = query.split_whitespace().count();
-                    querying_writer.write_record(&[&paragraph_counter.to_string(), &tokens_in_query.to_string(), &query_duration_micros.to_string()])?;
+                    querying_writer.write_record(&[&paragraph_counter.to_string(), &query.to_string(), &query_duration_micros.to_string()])?;
                 }
 
                 let posting_list_sizes = index.approximate_posting_list_sizes_in_bytes();

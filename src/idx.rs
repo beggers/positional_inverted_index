@@ -2,6 +2,7 @@ use rand::{
     distributions::{Distribution, WeightedIndex},
     thread_rng
 };
+use regex::Regex;
 use serde::{
     Serialize,
     Deserialize
@@ -26,7 +27,7 @@ impl PositionalInvertedIndex {
     }
 
     pub fn index_document(&mut self, doc_id: usize, content: &str) {
-        let tokens = content.split_whitespace().map(|s| s.to_lowercase()).collect::<Vec<_>>();
+        let tokens = Self::get_tokens(content);
         for (pos, token) in tokens.iter().enumerate() {
             self.index
                 .entry(token.clone())
@@ -39,19 +40,8 @@ impl PositionalInvertedIndex {
     }
 
     pub fn search(&self, query: &str) -> Vec<usize> {
-        let tokens = query.split_whitespace().map(|s| s.to_lowercase()).collect::<Vec<_>>();
+        let tokens = Self::get_tokens(query);
 
-        // Doc ID -> possible start positions for the query. We'll populate this
-        // with posting lists for the first token then iterate over posting
-        // lists and filter.
-        // 
-        // We could traverse posting lists together so we
-        // never actually have to access an entire posting list at once, but this
-        // has worse memory access characteristics and doesn't save us anything:
-        // we need to load all the required posting lists into memory (from S3
-        // in the production case) anyway.
-        //
-        // TODO annotate posting lists with size and go smallest to largest.
         let mut possibles: HashMap<usize, Vec<usize>> = HashMap::new();
         if let Some(docs) = self.index.get(&tokens[0]) {
             for (&doc_id, positions) in docs {
@@ -90,6 +80,15 @@ impl PositionalInvertedIndex {
         }
         results.sort();
         results
+    }
+
+    fn get_tokens(content: &str) -> Vec<String> {
+        let re = Regex::new(r"[^\w\s]").unwrap();
+        let tokens = content.split_whitespace()
+                            .map(|s| re.replace_all(s, "").to_lowercase())
+                            .filter(|s| !s.is_empty())
+                            .collect::<Vec<_>>();
+        tokens
     }
 
     pub fn get_random_terms(&self, n: usize) -> HashMap<String, usize> {
@@ -398,5 +397,47 @@ mod tests {
         let sizes = index.approximate_posting_list_sizes_in_bytes_by_term();
         assert_eq!(sizes.get("apple").unwrap(), sizes.get("orange").unwrap());
         assert!(sizes.get("apple").unwrap() > sizes.get("banana").unwrap());
+    }
+
+    #[test]
+    fn test_get_tokens_with_regular_text() {
+        let content = "Hello world";
+        let tokens = PositionalInvertedIndex::get_tokens(content);
+        assert_eq!(tokens, vec!["hello", "world"]);
+    }
+
+    #[test]
+    fn test_get_tokens_with_special_characters() {
+        let content = "Hello, world!";
+        let tokens = PositionalInvertedIndex::get_tokens(content);
+        assert_eq!(tokens, vec!["hello", "world"]);
+    }
+
+    #[test]
+    fn test_get_tokens_with_numbers() {
+        let content = "2024 is the year";
+        let tokens = PositionalInvertedIndex::get_tokens(content);
+        assert_eq!(tokens, vec!["2024", "is", "the", "year"]);
+    }
+
+    #[test]
+    fn test_get_tokens_with_mixed_characters() {
+        let content = "Email@example.com is an e-mail address!";
+        let tokens = PositionalInvertedIndex::get_tokens(content);
+        assert_eq!(tokens, vec!["emailexamplecom", "is", "an", "email", "address"]);
+    }
+
+    #[test]
+    fn test_get_tokens_with_empty_string() {
+        let content = "";
+        let tokens = PositionalInvertedIndex::get_tokens(content);
+        assert!(tokens.is_empty());
+    }
+
+    #[test]
+    fn test_get_tokens_with_whitespace_only() {
+        let content = "   ";
+        let tokens = PositionalInvertedIndex::get_tokens(content);
+        assert!(tokens.is_empty());
     }
 }
