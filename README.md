@@ -35,3 +35,10 @@ Benchmark completed successfully
 $ cargo run -- $INDEX_NAME benchmark 50 3 3 results/many_books_small_queries $(find benchmarking_data | grep "/")
 Benchmark completed successfully
 ```
+
+# Plotting
+
+```sh
+$ cargo run -- $INDEX_NAME plot_indexing_duration results/many_books_small_queries
+Plot completed successfully
+```

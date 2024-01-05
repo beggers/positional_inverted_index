@@ -4,7 +4,10 @@ mod plot;
 
 use benchmark::benchmark_index;
 use idx::PositionalInvertedIndex;
-use plot::plot_indexing_duration;
+use plot::{
+    plot_indexing_duration,
+    plot_query_duration
+};
 use clap::{
     App,
     Arg,
@@ -60,7 +63,12 @@ fn main() {
                 .required(true)
                 .multiple(true)))
         .subcommand(SubCommand::with_name("plot_indexing_duration")
-            .about("Plots benchmarking results")
+            .about("Plots indexing duration results")
+            .arg(Arg::with_name("Target Directory")
+                .help("The target directory to read benchmark results and write the plot")
+                .required(true)))
+        .subcommand(SubCommand::with_name("plot_query_duration")
+            .about("Plots query duration results")
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to read benchmark results and write the plot")
                 .required(true)))
@@ -111,6 +119,14 @@ fn main() {
             let target_directory = sub_m.value_of("Target Directory").unwrap();
 
             match plot_indexing_duration(target_directory) {
+                Ok(_) => println!("Plot completed successfully"),
+                Err(e) => println!("Plot failed: {}", e),
+            }
+        },
+        ("plot_query_duration", Some(sub_m)) => {
+            let target_directory = sub_m.value_of("Target Directory").unwrap();
+
+            match plot_query_duration(target_directory) {
                 Ok(_) => println!("Plot completed successfully"),
                 Err(e) => println!("Plot failed: {}", e),
             }
