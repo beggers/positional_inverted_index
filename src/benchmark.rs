@@ -1,4 +1,6 @@
-use crate::PositionalInvertedIndex;
+use crate::idx::{
+    PositionalInvertedIndex,
+};
 use crate::query_tokens::{
     generate_queries_from_fixed_dictionary,
     generate_queries_from_distribution,

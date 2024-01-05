@@ -4,7 +4,9 @@ mod plot;
 mod query_tokens;
 
 use benchmark::benchmark_index;
-use idx::PositionalInvertedIndex;
+use idx::{
+    PositionalInvertedIndex,
+};
 use plot::{
     plot_index_latency,
     plot_query_latency

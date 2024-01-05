@@ -12,9 +12,16 @@ use std::{
 };
 
 #[derive(Serialize, Deserialize)]
+pub enum TokenOrdering {
+    TokenOrder,
+    AscendingFrequencyOrder,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct PositionalInvertedIndex {
     index: HashMap<String, HashMap<usize, Vec<usize>>>,
     term_frequencies: HashMap<String, usize>,
+    ordering: TokenOrdering,
 }
 
 impl PositionalInvertedIndex {
@@ -22,6 +29,15 @@ impl PositionalInvertedIndex {
         PositionalInvertedIndex {
             index: HashMap::new(),
             term_frequencies: HashMap::new(),
+            ordering: TokenOrdering::TokenOrder,
+        }
+    }
+
+    pub fn with_ordering(ordering: TokenOrdering) -> Self {
+        PositionalInvertedIndex {
+            index: HashMap::new(),
+            term_frequencies: HashMap::new(),
+            ordering: ordering,
         }
     }
 
@@ -40,6 +56,7 @@ impl PositionalInvertedIndex {
 
     pub fn search(&self, query: &str) -> Vec<usize> {
         let tokens = Self::get_tokens(query);
+        let tokens = self.order_tokens(&tokens);
 
         let mut possibles: HashMap<usize, Vec<usize>> = HashMap::new();
         if let Some(docs) = self.index.get(&tokens[0]) {
@@ -89,6 +106,20 @@ impl PositionalInvertedIndex {
                     .to_lowercase())
             .filter(|s| !s.is_empty())
             .collect::<Vec<_>>()
+    }
+
+    fn order_tokens(&self, tokens: &Vec<String>) -> Vec<String> {
+        match self.ordering {
+            TokenOrdering::TokenOrder => tokens.clone(),
+            TokenOrdering::AscendingFrequencyOrder => {
+                let mut token_freq_pairs: Vec<(&String, &usize)> = tokens.iter()
+                    .map(|t| (t, self.term_frequencies.get(t).unwrap_or(&0)))
+                    .collect();
+                
+                token_freq_pairs.sort_by_key(|&(_, freq)| freq);
+                token_freq_pairs.into_iter().map(|(token, _)| token.clone()).collect()
+            },
+        }
     }
 
     pub fn get_random_terms(&self, n: usize) -> HashMap<String, usize> {
@@ -441,5 +472,26 @@ mod tests {
         let content = "   ";
         let tokens = PositionalInvertedIndex::get_tokens(content);
         assert!(tokens.is_empty());
+    }
+
+    #[test]
+    fn test_order_tokens_token_order() {
+        let index = PositionalInvertedIndex::with_ordering(TokenOrdering::TokenOrder);
+        let tokens = vec!["apple".to_string(), "banana".to_string(), "apple".to_string()];
+        let ordered_tokens = index.order_tokens(&tokens);
+        assert_eq!(ordered_tokens, tokens);
+    }
+
+    #[test]
+    fn test_order_tokens_ascending_frequency_order() {
+        let mut index = PositionalInvertedIndex::with_ordering(TokenOrdering::AscendingFrequencyOrder);
+
+        // Index some documents to create frequencies
+        index.index_document(1, "apple apple apple apple apple cherry");
+        index.index_document(2, "banana cherry cherry");
+
+        let tokens = vec!["apple".to_string(), "cherry".to_string(), "banana".to_string()];
+        let ordered_tokens = index.order_tokens(&tokens);
+        assert_eq!(ordered_tokens, vec!["banana".to_string(), "cherry".to_string(), "apple".to_string()]);
     }
 }
