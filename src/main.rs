@@ -23,12 +23,11 @@ fn main() {
         .version("0.1")
         .author("beggers")
         .about("Manages a positional inverted index")
-        .arg(Arg::with_name("INDEX")
-            .help("Sets the path to the index file")
-            .required(true)
-            .index(1))
         .subcommand(SubCommand::with_name("index")
             .about("Indexes a document")
+            .arg(Arg::with_name("INDEX")
+                .help("Sets the path to the index file")
+                .required(true))
             .arg(Arg::with_name("DOC_ID")
                 .help("The ID of the document to index")
                 .required(true))
@@ -37,13 +36,22 @@ fn main() {
                 .required(true)))
         .subcommand(SubCommand::with_name("search")
             .about("Searches the index")
+            .arg(Arg::with_name("INDEX")
+                .help("Sets the path to the index file")
+                .required(true))
             .arg(Arg::with_name("QUERY")
                 .help("The query string to search for")
                 .required(true)))
         .subcommand(SubCommand::with_name("term_list_size")
-            .about("Prints the approximate size of the term list in bytes"))
+            .about("Prints the approximate size of the term list in bytes")
+            .arg(Arg::with_name("INDEX")
+                .help("Sets the path to the index file")
+                .required(true)))
         .subcommand(SubCommand::with_name("posting_list_sizes")
-            .about("Prints the approximate size of each posting list in bytes"))
+            .about("Prints the approximate size of each posting list in bytes")
+            .arg(Arg::with_name("INDEX")
+                .help("Sets the path to the index file")
+                .required(true)))
         .subcommand(SubCommand::with_name("benchmark")
             .about("Runs a benchmarking suite")
             .arg(Arg::with_name("Query Frequency")
@@ -74,17 +82,11 @@ fn main() {
                 .required(true)))
         .get_matches();
 
-    let index_path = matches.value_of("INDEX").unwrap();
-
-    let mut index = if Path::new(index_path).exists() {
-        let data = fs::read_to_string(index_path).expect("Unable to read file");
-        serde_json::from_str(&data).expect("Unable to parse file")
-    } else {
-        PositionalInvertedIndex::new()
-    };
-
     match matches.subcommand() {
         ("index", Some(sub_m)) => {
+            let index_path = sub_m.value_of("INDEX").unwrap();
+            let mut index = read_or_create_index(index_path);
+
             let doc_id = sub_m.value_of("DOC_ID").unwrap().parse::<usize>().expect("Invalid document ID");
             let content = sub_m.value_of("CONTENT").unwrap();
             index.index_document(doc_id, content);
@@ -93,14 +95,23 @@ fn main() {
             fs::write(index_path, serialized).expect("Unable to write file");
         },
         ("search", Some(sub_m)) => {
+            let index_path = sub_m.value_of("INDEX").unwrap();
+            let index = read_or_create_index(index_path);
+
             let query = sub_m.value_of("QUERY").unwrap();
             let results = index.search(query);
             println!("Search results: {:?}", results);
         },
-        ("term_list_size", Some(_)) => {
+        ("term_list_size", Some(sub_m)) => {
+            let index_path = sub_m.value_of("INDEX").unwrap();
+            let index = read_or_create_index(index_path);
+
             println!("Approximate term list size in bytes: {}", index.approximate_term_list_size_in_bytes());
         },
-        ("posting_list_sizes", Some(_)) => {
+        ("posting_list_sizes", Some(sub_m)) => {
+            let index_path = sub_m.value_of("INDEX").unwrap();
+            let index = read_or_create_index(index_path);
+
             println!("Approximate posting list sizes in bytes: {:?}", index.approximate_posting_list_sizes_in_bytes());
         },
         ("benchmark", Some(sub_m)) => {
@@ -133,4 +144,14 @@ fn main() {
         },
         _ => panic!("You must specify a subcommand: either 'index' or 'search'"),
     }
+}
+
+fn read_or_create_index(index_path: &str) -> PositionalInvertedIndex {
+    let index = if Path::new(index_path).exists() {
+        let data = fs::read_to_string(index_path).expect("Unable to read file");
+        serde_json::from_str(&data).expect("Unable to parse file")
+    } else {
+        PositionalInvertedIndex::new()
+    };
+    index
 }

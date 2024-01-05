@@ -11,36 +11,35 @@ Example:
 ```sh
 $ mkdir indices
 $ INDEX_NAME=indices/testindex  # the file you want to save the index in. Indices and files are 1-1
-$ cargo run $INDEX_NAME index 1 "here is some content"
-$ cargo run $INDEX_NAME index 2 "here is some more content"
-$ cargo run $INDEX_NAME index 3 "here is even more content"
-$ cargo run $INDEX_NAME search "is some"
+$ cargo run index $INDEX_NAME 1 "here is some content"
+$ cargo run index $INDEX_NAME 2 "here is some more content"
+$ cargo run index $INDEX_NAME 3 "here is even more content"
+$ cargo run search $INDEX_NAME "is some"
 Search results: [1, 2]
-$ cargo run $INDEX_NAME search "here"
+$ cargo run search $INDEX_NAME "here"
 Search results: [1, 2, 3]
-$ cargo run $INDEX_NAME search "more content"
+$ cargo run search $INDEX_NAME "more content"
 Search results: [2, 3]
-$ cargo run $INDEX_NAME term_list_size
+$ cargo run term_list_size $INDEX_NAME
 Approximate term list size in bytes: 216
-$ cargo run $INDEX_NAME posting_list_sizes
+$ cargo run posting_list_sizes $INDEX_NAME
 Approximate posting list sizes in bytes: [16, 32, 32, 48, 48, 48]
 ```
 
 # Benchmarking
 
 ```sh
-$ INDEX_NAME=indices/frankenstein  # Index name doesn't actually matter for benchmarking but is still required
-$ cargo run -- $INDEX_NAME benchmark 50 3 3 results/frankenstein "benchmarking_data/frankenstein.txt"
+$ cargo run -- benchmark 50 3 3 results/frankenstein "benchmarking_data/frankenstein.txt"
 Benchmark completed successfully
-$ cargo run -- $INDEX_NAME benchmark 50 3 3 results/many_books_small_queries $(find benchmarking_data | grep "/")
+$ cargo run -- benchmark 50 3 3 results/many_books_small_queries $(find benchmarking_data | grep "/")
 Benchmark completed successfully
 ```
 
 # Plotting
 
 ```sh
-$ cargo run -- $INDEX_NAME plot_indexing_duration results/many_books_small_queries
+$ cargo run -- plot_indexing_duration results/frankenstein
+Plot completed successfully
+$ cargo run -- plot_query_duration results/frankenstein
 Plot completed successfully
 ```
-
-...but you should probably just use an online free CSV plotter/explorer.
