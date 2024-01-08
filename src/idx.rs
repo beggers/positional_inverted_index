@@ -55,8 +55,15 @@ impl PositionalInvertedIndex {
     }
 
     pub fn search(&self, query: &str) -> Vec<usize> {
+        if query.is_empty() {
+            return vec![];
+        }
+
         let tokens = Self::get_tokens(query);
         let tokens = self.order_tokens(&tokens);
+        if tokens.is_empty() {
+            return vec![];
+        }
 
         let mut possibles: HashMap<usize, Vec<usize>> = HashMap::new();
         if let Some(docs) = self.index.get(&tokens[0]) {

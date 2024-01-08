@@ -59,16 +59,20 @@ pub fn pull_query_from_paragraph(paragraph: &str, num_queries: usize, max_tokens
     }
 
     let tokens: Vec<&str> = paragraph.split_whitespace().collect();
-    if tokens.len() < max_tokens {
-        panic!("Not enough tokens in the paragraph to satisfy the request");
+    let token_count = tokens.len();
+    let max_query_length = max_tokens.min(token_count);
+
+    if token_count == 0 {
+        return vec![];
     }
 
     let mut rng = rand::thread_rng();
     let mut queries = Vec::with_capacity(num_queries);
 
     for _ in 0..num_queries {
-        let query_length = rng.gen_range(1..=max_tokens.min(tokens.len()));
-        let selected_tokens = tokens.choose_multiple(&mut rng, query_length).cloned().collect::<Vec<_>>();
+        let query_length = rng.gen_range(1..=max_query_length);
+        let start_index = rng.gen_range(0..token_count - query_length + 1);
+        let selected_tokens = &tokens[start_index..start_index + query_length];
         queries.push(selected_tokens.join(" "));
     }
 
@@ -185,10 +189,8 @@ mod tests {
         let queries = pull_query_from_paragraph(paragraph, 3, 4);
         assert_eq!(queries.len(), 3);
         for query in queries {
-            assert!(query.split_whitespace().count() <= 4);
-            for token in query.split_whitespace() {
-                assert!(paragraph.contains(token));
-            }
+            println!("{}", query);
+            assert!(paragraph.contains(&query));
         }
     }
 
@@ -200,10 +202,13 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Not enough tokens in the paragraph to satisfy the request")]
     fn test_query_from_paragraph_max_tokens_exceeding_paragraph_length() {
         let paragraph = "Short paragraph";
-        pull_query_from_paragraph(paragraph, 3, 10);
+        let queries = pull_query_from_paragraph(paragraph, 3, 10);
+        for query in queries {
+            assert!(query.split_whitespace().count() <= 2);
+            assert!(paragraph.contains(&query));
+        }
     }
 
     #[test]
