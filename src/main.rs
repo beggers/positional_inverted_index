@@ -1,8 +1,12 @@
+mod analysis;
 mod benchmark;
 mod idx;
 mod plot;
 mod query_tokens;
 
+use analysis::{
+    print_top_n_final_posting_lists
+};
 use benchmark::benchmark_index;
 use idx::{
     PositionalInvertedIndex,
@@ -112,6 +116,14 @@ fn main() {
             .arg(Arg::with_name("Target Directory")
                 .help("The target directory to read benchmark results and write the plots")
                 .required(true)))
+        .subcommand(SubCommand::with_name("print_top_n_final_posting_lists")
+            .about("Prints the top n final posting lists")
+            .arg(Arg::with_name("Target Directory")
+                .help("The target directory to read benchmark results and write the plots")
+                .required(true))
+            .arg(Arg::with_name("n")
+                .help("The number of posting lists to print")
+                .required(true)))
         .get_matches();
 
     match matches.subcommand() {
@@ -206,6 +218,15 @@ fn main() {
             match plot::plot_all(target_directory) {
                 Ok(_) => println!("Plot completed successfully"),
                 Err(e) => println!("Plot failed: {}", e),
+            }
+        },
+        ("print_top_n_final_posting_lists", Some(sub_m)) => {
+            let target_directory = sub_m.value_of("Target Directory").unwrap();
+            let n = sub_m.value_of("n").unwrap().parse::<usize>().expect("Invalid n");
+
+            match print_top_n_final_posting_lists(target_directory, n) {
+                Ok(_) => println!("Print completed successfully"),
+                Err(e) => println!("Print failed: {}", e),
             }
         },
         _ => panic!("You must specify a subcommand: either 'index' or 'search'"),
